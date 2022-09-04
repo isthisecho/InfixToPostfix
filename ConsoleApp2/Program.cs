@@ -13,7 +13,7 @@ namespace InfixToPostfix
 
 
                 string infix = Console.ReadLine();
-                string result = "";
+             
 
                 switch (infix.ToLowerInvariant())
                 {
@@ -25,8 +25,8 @@ namespace InfixToPostfix
                         {
                             ShuntingYard shuntingYard = new ShuntingYard();
                                 string postfix = shuntingYard.ToPostfix(infix, out string errors);
-                                if(postfix.Length>0 && !char.IsLetter(postfix[0])){
-                                        result = shuntingYard.Calculate(postfix);
+                            
+                                     //  string  result = shuntingYard.Calculate(postfix);
                                         if (!string.IsNullOrEmpty(errors))
                                         {
                                             Console.WriteLine("Hata:");
@@ -39,16 +39,16 @@ namespace InfixToPostfix
                                                 Console.Write("Postfix :  ");
                                                 Console.WriteLine(postfix);
                                             }
-                                            if (result != null)
-                                            {
-                                                Console.Write("Result  :  ");
-                                                Console.WriteLine(result);
+                                            //if (result != null)
+                                            //{
+                                            //    Console.Write("Result  :  ");
+                                            //    Console.WriteLine(result);
 
-                                            }
+                                            //}
 
 
                                         }
-                            }
+                            
 
 
                           

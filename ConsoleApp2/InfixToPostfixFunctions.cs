@@ -15,13 +15,20 @@ namespace InfixToPostfix
         {
 
 
-            Stack<string> stack = new Stack<string>();
+           // Stack<string> stack = new Stack<string>();
             StringBuilder sb = new StringBuilder();
 
             List<string> errors_ = new List<string>();
             foreach (var item in TokenlarıBul(infix))
             {
                 if (item is ConstantToken)
+                {
+
+                    sb.Append(item.Text);
+                    sb.Append(' ');
+                }
+
+                if (item is FunctionToken)
                 {
 
                     sb.Append(item.Text);
@@ -140,13 +147,11 @@ namespace InfixToPostfix
                 string ws = S.ReadWhileWhiteSpace();
                 if (!string.IsNullOrEmpty(ws))
                     yield return new WhitespaceToken() { Text = ws };
-                else if (S.TryReadMethod(out string result))
-                {
-                    yield return new MethodToken() { Text = result };
-                    Console.WriteLine(result);
-                }
+             
                 else if (S.TryReadNumber(out string numberText))
                     yield return new ConstantToken() { Text = numberText, Value = Convert.ToDouble(numberText) };
+                else if (S.TryReadFunctions(out string @function))
+                    yield return new FunctionToken(@function) { Text = @function};
                 else if (S.TryReadAny("+-/*^%()", out char @operator))
                     yield return new OperatorToken(@operator);
                 else
@@ -215,6 +220,56 @@ namespace InfixToPostfix
         {
             return $"Operator: {Text}, Oncelik: {Oncelik}";
         }
+    }
+
+    class FunctionToken : IToken
+    {
+        public string Text { get; set; }
+
+        public FunctionToken(string @function)
+        {
+
+            switch (@function.ToLowerInvariant())
+            {
+                case         "sum"              :        break;
+                case         "pow"              :        break;
+                case         "divide"           :        break;
+                case         "remainder"        :        break;
+                case         "multiply"         :        break;
+              
+            }
+
+
+        }
+
+
+        public static double Pow(double val1, double val2)
+        {
+            return Math.Pow(val1, val2);
+        }
+
+        public static double Sum(double val1, double val2)
+        {
+            return val1 + val2;
+        }
+
+        public static double Multiply(double val1, double val2)
+        {
+            return val1 * val2;
+        }
+
+        public static double Divide(double val1, double val2)
+        {
+            return val1 / val2;
+        }
+
+        public static double Remainder(double val1, double val2)
+        {
+            return val1 % val2;
+        }
+
+
+
     }
     class ConstantToken : IToken
     {
@@ -440,38 +495,47 @@ namespace InfixToPostfix
             matched = default;
             return false;
         }
-        public bool TryReadMethod(out string result)
+
+
+        public bool TryReadFunctions( out string? @function)
         {
             int currentIndex = Index;
-            Type t = typeof(MethodToken);
-            MethodInfo[] mi = t.GetMethods();
-            if (TryReadIdentifier(out string identifier) && TryRead("(", out string _) &&TryReadNumber(out string val1) && TryRead(",", out string _)&& TryReadNumber(out string val2) && TryRead(")", out string _) && TryRead(";", out string _))
+
+
+            if (TryReadIdentifier(out string id))
             {
+                if (string.Equals(id, "sum", StringComparison.OrdinalIgnoreCase))
+                {
+                    @function = id;
+                    return true;
+                }
+                else if (string.Equals(id, "pow", StringComparison.OrdinalIgnoreCase))
+                {
+                    @function = id;
+                    return true;
+                }
 
-              
-              
-               
-                        foreach (var item in mi)
-                        {
+                else if (string.Equals(id, "remainder", StringComparison.OrdinalIgnoreCase))
+                {
+                    @function = id;
+                    return true;
+                }
 
-                            if (item.Name.ToLower() == identifier.ToLower())
-                            {
-                               
-                                    result = Convert.ToString(item.Invoke(t, new object[] { double.Parse(val1), double.Parse(val2) }));
-                                    return true;
-                               
-                              
+                else if (string.Equals(id, "divide", StringComparison.OrdinalIgnoreCase))
+                {
+                    @function = id;
+                    return true;
+                }
 
-                            }
-                           
-                        }
-                        result = $"Hatalı Function Name Call ! {identifier}  ";
-                        Index = currentIndex;
-                      
-
+                else if (string.Equals(id, "pow", StringComparison.OrdinalIgnoreCase))
+                {
+                    @function = id;
+                    return true;
+                }
             }
 
-            result =null;
+            Index = currentIndex;
+            @function = null;
             return false;
         }
         public bool Try(char c)
