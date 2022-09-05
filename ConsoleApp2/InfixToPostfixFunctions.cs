@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
-
 namespace InfixToPostfix
 {
     class ShuntingYard
@@ -13,9 +8,6 @@ namespace InfixToPostfix
         Stack<string> stack = new Stack<string>();
         internal string ToPostfix(string infix, out string errors)
         {
-
-
-           // Stack<string> stack = new Stack<string>();
             StringBuilder sb = new StringBuilder();
 
             List<string> errors_ = new List<string>();
@@ -28,14 +20,34 @@ namespace InfixToPostfix
                     sb.Append(' ');
                 }
 
-                if (item is FunctionToken)
+                else if (item is FunctionToken)
                 {
 
-                    sb.Append(item.Text);
+                    stack.Push(item.Text);
                     sb.Append(' ');
                 }
+ 
 
-                if (item is OperatorToken)
+                else if (item is CommaToken)
+                {
+                    string a = stack.Peek();
+
+                    while(stack.Count>0 && (a !="(" ))
+                    {
+                        sb.Append(stack.Pop());
+                        sb.Append(' ');
+                        
+                        if(stack.Count>0)
+                        {
+                            a = stack.Peek();
+                        }
+                    }
+                
+                  
+                }
+
+
+                else if (item is OperatorToken)
                 {
                     OperatorToken x = new OperatorToken(char.Parse(item.Text));
                     if (stack.Count == 0)
@@ -46,11 +58,15 @@ namespace InfixToPostfix
                     }
                     else if (x.Text == ")")
                     {
-                      while(stack.Count>0 && (stack.Peek() != "("))
+                      while(stack.Count>0 && stack.Peek() != "(")
                         {
-                            sb.Append(stack.Pop());
-                            sb.Append(' ');
-                        }
+                            if (x.Text != ",")
+                            {
+                                sb.Append(stack.Pop());
+                                sb.Append(' ');
+                            }
+                          
+                       }
                         stack.Pop();
                     }
                     else
@@ -62,6 +78,7 @@ namespace InfixToPostfix
 
                             sb.Append(stack.Pop());
                             sb.Append(' ');
+                           
                         }
 
                         stack.Push(x.Text);
@@ -98,6 +115,7 @@ namespace InfixToPostfix
                     stack.Push(item.Text);
 
                 }
+             
                 if (item is OperatorToken)
                 {
                    
@@ -132,6 +150,26 @@ namespace InfixToPostfix
                             break;
                     }
                 }
+                if (item is FunctionToken)
+                {
+                    double val1 = double.Parse(stack.Pop());
+                    double val2 = double.Parse(stack.Pop());
+                    
+                    Type t = typeof(FunctionToken);
+                    MethodInfo[] mi = t.GetMethods();
+                    
+                    foreach( var method in mi)
+                    {
+                        if (method.Name.ToLower() == item.Text.ToLower())
+                        {
+                             
+                            stack.Push(Convert.ToString(method.Invoke(t, new object[] { val2 , val1 })));
+                        }
+                    }
+                  
+
+
+                }
 
             }
             string result = stack.Pop();
@@ -147,11 +185,13 @@ namespace InfixToPostfix
                 string ws = S.ReadWhileWhiteSpace();
                 if (!string.IsNullOrEmpty(ws))
                     yield return new WhitespaceToken() { Text = ws };
-             
+
                 else if (S.TryReadNumber(out string numberText))
                     yield return new ConstantToken() { Text = numberText, Value = Convert.ToDouble(numberText) };
                 else if (S.TryReadFunctions(out string @function))
-                    yield return new FunctionToken(@function) { Text = @function};
+                    yield return new FunctionToken(@function);
+                else if (S.TryRead(",", out string comma))
+                    yield return new CommaToken() { Text = comma };
                 else if (S.TryReadAny("+-/*^%()", out char @operator))
                     yield return new OperatorToken(@operator);
                 else
@@ -164,41 +204,7 @@ namespace InfixToPostfix
     {
         string Text { get; }
     }
-    class MethodToken : IToken
-    {
 
-        public double Result { get; set; }
-
-        public string Text  {get; set;}
-
-     
-
-        public static double Pow(double val1, double val2)
-        {
-            return Math.Pow(val1, val2);
-        }
-
-        public static double Sum(double val1, double val2)
-        {
-            return val1 + val2;
-        }
-
-        public static double Multiply(double val1, double val2)
-        {
-            return val1 * val2;
-        }
-
-        public static double Divide(double val1, double val2)
-        {
-            return val1 / val2;
-        }
-
-        public static double Remainder(double val1, double val2)
-        {
-            return val1 % val2;
-        }
-
-    }
     class OperatorToken : IToken
     {
         public string Text { get; }
@@ -214,6 +220,8 @@ namespace InfixToPostfix
                 case '/': Oncelik = 2; break;
                 case '%': Oncelik = 2; break;
                 case '^': Oncelik = 3; break;
+                case '(': Oncelik = 0; break;
+                case ')': Oncelik = 0; break;
             }
         }
         public override string ToString()
@@ -221,25 +229,31 @@ namespace InfixToPostfix
             return $"Operator: {Text}, Oncelik: {Oncelik}";
         }
     }
-
     class FunctionToken : IToken
     {
         public string Text { get; set; }
 
         public FunctionToken(string @function)
         {
-
+            Text = @function.ToString();
             switch (@function.ToLowerInvariant())
             {
-                case         "sum"              :        break;
-                case         "pow"              :        break;
-                case         "divide"           :        break;
-                case         "remainder"        :        break;
-                case         "multiply"         :        break;
               
+                case         "sum"              : Text =        "sum";             break;
+                case         "pow"              : Text =        "pow";             break;
+                case         "divide"           : Text =        "divide";          break;
+                case         "remainder"        : Text =        "remainder";       break;
+                case         "multiply"         : Text =        "multiply";        break;
+                
             }
 
+           
 
+
+        }
+        public override string ToString()
+        {
+            return $"Function Name : {Text}";
         }
 
 
@@ -281,6 +295,18 @@ namespace InfixToPostfix
         {
             return $"Constant: {Text}, Value: {Value}";
         }
+    }
+
+    class CommaToken : IToken
+    {
+       public  string Text { get; set; }
+
+
+        public override string ToString()
+        {
+            return $"Comma : {Text}";
+        }
+
     }
     class WhitespaceToken : IToken
     {
