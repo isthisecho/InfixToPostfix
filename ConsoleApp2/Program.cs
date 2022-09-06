@@ -26,7 +26,7 @@ namespace InfixToPostfix
                             ShuntingYard shuntingYard = new ShuntingYard();
                                 string postfix = shuntingYard.ToPostfix(infix, out string errors);
                             
-                                       string  result = shuntingYard.Calculate(postfix);
+                                    //   string  result = shuntingYard.Calculate(postfix);
                                         if (!string.IsNullOrEmpty(errors))
                                         {
                                             Console.WriteLine("Hata:");
@@ -39,12 +39,12 @@ namespace InfixToPostfix
                                                 Console.Write("Postfix :  ");
                                                 Console.WriteLine(postfix);
                                             }
-                                            if (result != null)
-                                            {
-                                                Console.Write("Result  :  ");
-                                                Console.WriteLine(result);
+                                            //if (result != null)
+                                            //{
+                                            //    Console.Write("Result  :  ");
+                                            //    Console.WriteLine(result);
 
-                                            }
+                                            //}
 
 
                                         }

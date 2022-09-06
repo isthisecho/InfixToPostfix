@@ -5,11 +5,33 @@ namespace InfixToPostfix
 {
     class ShuntingYard
     {
+
+
+        public static object InvokeAsync(string match, out string result, params object[] arguments)
+        {
+
+            Type t = typeof(FunctionToken);
+            MethodInfo[] mi = t.GetMethods();
+           
+        
+
+            foreach (var method in mi)
+            {
+                if (method.Name.ToLower() == match.ToLower())
+                {
+                    result = Convert.ToString(method.Invoke(t, arguments));
+                    return result;
+                }
+            }
+            result = null;
+            return result;
+        }
+
         Stack<string> stack = new Stack<string>();
         internal string ToPostfix(string infix, out string errors)
         {
             StringBuilder sb = new StringBuilder();
-
+            int funcLength = 1;
             List<string> errors_ = new List<string>();
             foreach (var item in TokenlarıBul(infix))
             {
@@ -24,26 +46,14 @@ namespace InfixToPostfix
                 {
 
                     stack.Push(item.Text);
-                    sb.Append(' ');
+                   
                 }
  
 
                 else if (item is CommaToken)
                 {
-                    string a = stack.Peek();
-
-                    while(stack.Count>0 && (a !="(" ))
-                    {
-                        sb.Append(stack.Pop());
-                        sb.Append(' ');
-                        
-                        if(stack.Count>0)
-                        {
-                            a = stack.Peek();
-                        }
-                    }
-                
-                  
+                   
+                    funcLength++;
                 }
 
 
@@ -58,13 +68,12 @@ namespace InfixToPostfix
                     }
                     else if (x.Text == ")")
                     {
+                       
                       while(stack.Count>0 && stack.Peek() != "(")
                         {
-                            if (x.Text != ",")
-                            {
+                           
                                 sb.Append(stack.Pop());
                                 sb.Append(' ');
-                            }
                           
                        }
                         stack.Pop();
@@ -94,8 +103,20 @@ namespace InfixToPostfix
             }
             while (stack.Count > 0)
             {
-                sb.Append(stack.Pop());
-                sb.Append(' ');
+                StringReader sr = new StringReader(stack.Peek());
+                if (sr.TryReadFunctions(out string _))
+                {
+                    sb.Append(stack.Pop()+"("+funcLength+")");
+                    sb.Append(' ');
+                    funcLength = 0;
+
+                }
+                else
+                {
+                    sb.Append(stack.Pop());
+                    sb.Append(' ');
+                }
+             
             }
 
             errors = string.Join(", ", errors_);
@@ -150,23 +171,27 @@ namespace InfixToPostfix
                             break;
                     }
                 }
+                
                 if (item is FunctionToken)
                 {
-                    double val1 = double.Parse(stack.Pop());
-                    double val2 = double.Parse(stack.Pop());
-                    
-                    Type t = typeof(FunctionToken);
-                    MethodInfo[] mi = t.GetMethods();
-                    
-                    foreach( var method in mi)
+
+                    object[] primeNumbers= new object[stack.Count];
+                    ConstantToken x = new ConstantToken();
+                    int i = 0;
+                    foreach (var itemm in stack)
                     {
-                        if (method.Name.ToLower() == item.Text.ToLower())
+                        if(!itemm.Contains("+-/%^"))
                         {
-                             
-                            stack.Push(Convert.ToString(method.Invoke(t, new object[] { val2 , val1 })));
+                            primeNumbers[i] = double.Parse(stack.Pop());
+                            i++;
                         }
+                 
                     }
-                  
+
+                    InvokeAsync(item.Text,out string deneme, primeNumbers);
+
+                    stack.Push(deneme);
+
 
 
                 }
@@ -220,8 +245,6 @@ namespace InfixToPostfix
                 case '/': Oncelik = 2; break;
                 case '%': Oncelik = 2; break;
                 case '^': Oncelik = 3; break;
-                case '(': Oncelik = 0; break;
-                case ')': Oncelik = 0; break;
             }
         }
         public override string ToString()
@@ -290,7 +313,11 @@ namespace InfixToPostfix
         public string Text { get; set; }
         public double Value { get; set; }
       
-
+        public double[] AddElements(params double[] args)
+        {
+          
+            return args;
+        }
         public override string ToString()
         {
             return $"Constant: {Text}, Value: {Value}";
