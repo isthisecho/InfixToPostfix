@@ -5,8 +5,6 @@ namespace InfixToPostfix
 {
     class ShuntingYard
     {
-
-
         public static object InvokeAsync(string match, out string result, params object[] arguments)
         {
 
@@ -48,54 +46,79 @@ namespace InfixToPostfix
                     stack.Push(item.Text);
                    
                 }
- 
 
-                else if (item is CommaToken)
+                else if (item is ParanthesesToken)
                 {
-                   
-                    funcLength++;
-                }
 
+                    if (item.Text == "(")
+                    {
+                        stack.Push(item.Text);
+                    }
+                    
+                    else if (item.Text == ")")
+                    {
+
+                        while (stack.Count > 0 && stack.Peek() != "(")
+                        {
+                           
+                            sb.Append(stack.Pop());
+                            sb.Append(' ');
+
+                        }
+
+                        stack.Pop();
+                        if (stack.Count > 0)
+                        {
+                            StringReader x = new StringReader(stack.Peek());
+                            if (x.TryReadFunctions(out string fnc))
+                            {
+                                sb.Append(stack.Pop()+"("+funcLength+")");
+                                sb.Append(" ");
+                                funcLength = 1;
+
+                            }
+                        }
+
+                    }
+                }
 
                 else if (item is OperatorToken)
                 {
                     OperatorToken x = new OperatorToken(char.Parse(item.Text));
-                    if (stack.Count == 0)
-                        stack.Push(x.Text);
-                    else if (x.Text == "(")
-                    {
-                        stack.Push(x.Text);
-                    }
-                    else if (x.Text == ")")
-                    {
-                       
-                      while(stack.Count>0 && stack.Peek() != "(")
-                        {
-                           
-                                sb.Append(stack.Pop());
-                                sb.Append(' ');
-                          
-                       }
-                        stack.Pop();
-                    }
-                    else
-                    {
-                        OperatorToken sonItem = new OperatorToken(char.Parse(stack.Peek()));
+                   
 
-                        while (stack.Count > 0 && sonItem.Oncelik >= x.Oncelik)
-                        {
+                     if (stack.Count == 0)
+                        stack.Push(x.Text);
 
-                            sb.Append(stack.Pop());
-                            sb.Append(' ');
-                           
+
+                    else 
+                    {
+
+                        if (char.TryParse(stack.Peek(), out char result))
+                        {
+                            OperatorToken sonItem = new OperatorToken(result);
+                            while (stack.Count > 0 && stack.Peek() != "(" && (sonItem.Oncelik > x.Oncelik || (sonItem.Oncelik == x.Oncelik && x.LeftAssociavity == true)))
+                            {       
+                               
+                                
+                                    sb.Append(stack.Pop());
+                                    sb.Append(' ');
+                            }
+
                         }
-
-                        stack.Push(x.Text);
+                            
+                            if(x.Text != ",")
+                            {
+                                stack.Push(x.Text);
+                            }
+                            else
+                            {
+                                funcLength++;
+                            }
                     }
 
 
                 }
-
 
                 if (item is InvalidToken)
                     errors_.Add($"Invalid token found: {item.Text}");
@@ -104,18 +127,9 @@ namespace InfixToPostfix
             while (stack.Count > 0)
             {
                 StringReader sr = new StringReader(stack.Peek());
-                if (sr.TryReadFunctions(out string _))
-                {
-                    sb.Append(stack.Pop()+"("+funcLength+")");
-                    sb.Append(' ');
-                    funcLength = 0;
-
-                }
-                else
-                {
-                    sb.Append(stack.Pop());
-                    sb.Append(' ');
-                }
+                 sb.Append(stack.Pop());
+                 sb.Append(' ');
+              
              
             }
 
@@ -136,8 +150,14 @@ namespace InfixToPostfix
                     stack.Push(item.Text);
 
                 }
-             
-                if (item is OperatorToken)
+                else if(item is WhitespaceToken)
+                {
+                  
+
+                }
+            
+
+               else  if (item is OperatorToken)
                 {
                    
                     OperatorToken token = new OperatorToken(char.Parse(item.Text));
@@ -172,25 +192,34 @@ namespace InfixToPostfix
                     }
                 }
                 
-                if (item is FunctionToken)
+               else if( item is FunctionToken)
                 {
-
-                    object[] primeNumbers= new object[stack.Count];
-                    ConstantToken x = new ConstantToken();
-                    int i = 0;
-                    foreach (var itemm in stack)
+                    StringBuilder sb = new StringBuilder();
+                    int numberOfArguments = 0;
+                    foreach (var character in item.Text)
                     {
-                        if(!itemm.Contains("+-/%^"))
+                        if (char.IsLetter(character))
                         {
-                            primeNumbers[i] = double.Parse(stack.Pop());
-                            i++;
+                            sb.Append(character);
                         }
-                 
+                        else if (char.IsDigit(character))
+                        {
+                            Console.WriteLine("sa");
+                            numberOfArguments = (int)char.GetNumericValue(character);
+                        }
                     }
+                    
 
-                    InvokeAsync(item.Text,out string deneme, primeNumbers);
+                    object[] primeNumbers= new object[numberOfArguments];
+                    ConstantToken x = new ConstantToken();
+      
+                    for (int i = 0; i < numberOfArguments; i++)
+                    {
+                        primeNumbers[i] = double.Parse(stack.Pop());
+                    }
+                   // InvokeAsync(item.Text,out string deneme, primeNumbers);
 
-                    stack.Push(deneme);
+                  //  stack.Push(deneme);
 
 
 
@@ -215,9 +244,9 @@ namespace InfixToPostfix
                     yield return new ConstantToken() { Text = numberText, Value = Convert.ToDouble(numberText) };
                 else if (S.TryReadFunctions(out string @function))
                     yield return new FunctionToken(@function);
-                else if (S.TryRead(",", out string comma))
-                    yield return new CommaToken() { Text = comma };
-                else if (S.TryReadAny("+-/*^%()", out char @operator))
+                else if (S.TryReadAny("()", out char parantheses))
+                    yield return new ParanthesesToken() { Text = Convert.ToString(parantheses)};
+                else if (S.TryReadAny("+-/*^%,", out char @operator))
                     yield return new OperatorToken(@operator);
                 else
                     yield return new InvalidToken() { Text = S.Read().ToString() };
@@ -234,28 +263,32 @@ namespace InfixToPostfix
     {
         public string Text { get; }
         public int Oncelik { get; set; }
+        public bool LeftAssociavity { get; set; }
         public OperatorToken(char @operator)
         {
             Text = @operator.ToString();
             switch (@operator)
             {
-                case '+': Oncelik = 1; break;
-                case '-': Oncelik = 1; break;
-                case '*': Oncelik = 2; break;
-                case '/': Oncelik = 2; break;
-                case '%': Oncelik = 2; break;
-                case '^': Oncelik = 3; break;
+                case ',':       Oncelik     =   1 ;    LeftAssociavity     =   true   ;         break;
+                case '+':       Oncelik     =   2 ;    LeftAssociavity     =   true   ;         break;
+                case '-':       Oncelik     =   2 ;    LeftAssociavity     =   true   ;         break;
+                case '*':       Oncelik     =   3 ;    LeftAssociavity     =   true   ;         break;
+                case '/':       Oncelik     =   3 ;    LeftAssociavity     =   true   ;         break;
+                case '%':       Oncelik     =   3 ;    LeftAssociavity     =   true   ;         break;
+                case '^':       Oncelik     =   4 ;    LeftAssociavity     =   false  ;         break;
+               
             }
         }
         public override string ToString()
         {
-            return $"Operator: {Text}, Oncelik: {Oncelik}";
+            return $"Operator: {Text}, Oncelik: {Oncelik}, Left Associavity: {LeftAssociavity}";
         }
     }
     class FunctionToken : IToken
     {
         public string Text { get; set; }
-
+        public string NumberOfArguments { get; set; }
+     
         public FunctionToken(string @function)
         {
             Text = @function.ToString();
@@ -308,16 +341,22 @@ namespace InfixToPostfix
 
 
     }
+
+    class ParanthesesToken :IToken
+    {
+        public string Text { get; set; }
+
+        public override string ToString()
+        {
+            return $"Parantheses : {Text}";
+        }
+
+    }
     class ConstantToken : IToken
     {
         public string Text { get; set; }
         public double Value { get; set; }
-      
-        public double[] AddElements(params double[] args)
-        {
-          
-            return args;
-        }
+     
         public override string ToString()
         {
             return $"Constant: {Text}, Value: {Value}";
