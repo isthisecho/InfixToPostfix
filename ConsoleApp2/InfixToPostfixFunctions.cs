@@ -7,7 +7,7 @@ namespace InfixToPostfix
 {
     class ShuntingYard
     {
-        public static string InvokeAsync(string match, out string result, params dynamic[] arguments)
+        public static string InvokeDynamic(string match, out string result, params dynamic[] arguments)
         {
 
             Type t = typeof(FunctionToken);
@@ -19,7 +19,29 @@ namespace InfixToPostfix
             {
                 if (method.Name.ToLower() == match.ToLower())
                 {
-                    result = Convert.ToString(method.Invoke(null,arguments));
+                    result = Convert.ToString(method.Invoke(null,new object[] { arguments }));
+
+                    return result;
+                }
+            }
+            result = null;
+            return result;
+        }
+
+
+        public static string InvokeConstant(string match, out string result, double arg1, double arg2)
+        {
+
+            Type t = typeof(FunctionToken);
+            MethodInfo[] mi = t.GetMethods();
+
+
+
+            foreach (var method in mi)
+            {
+                if (method.Name.ToLower() == match.ToLower())
+                {
+                    result = Convert.ToString(method.Invoke(null, new object[] { arg1,arg2 }));
 
                     return result;
                 }
@@ -238,22 +260,45 @@ namespace InfixToPostfix
                         }
                         else if (char.IsDigit(character))
                         {
-                            
+
                             numberOfArguments = (int)char.GetNumericValue(character);
                         }
                     }
+
+
+                    if (item.Text.Contains("sum"))
+                    {
+                       
+
+
+                        dynamic[] primeNumbers = new dynamic[numberOfArguments];
+
+
+                        for (int i = numberOfArguments - 1; i >= 0; i--)
+                        {
+                            primeNumbers[i] = double.Parse(calculationStack.Pop());
+                        }
+                        InvokeDynamic(sb.ToString(), out string res, primeNumbers);
+
+                        calculationStack.Push(res);
+                    }
+                    else
+                    {
+                    
+                       
+                            double val1 = double.Parse(calculationStack.Pop());
+                            double val2 = double.Parse(calculationStack.Pop());
+                            InvokeConstant(sb.ToString(), out string res, val1, val2);
+                            calculationStack.Push(res);
+                       
+                    }
+
+                      
                     
 
-                    dynamic[] primeNumbers= new dynamic[numberOfArguments];
-                   
-      
-                    for (int i = numberOfArguments-1; i>=0; i--)
-                    {
-                        primeNumbers[i] = double.Parse(calculationStack.Pop());
-                    }
-                    InvokeAsync(sb.ToString(),out string deneme, primeNumbers);
+                  
 
-                    calculationStack.Push(deneme);
+
 
 
 
